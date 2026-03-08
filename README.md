@@ -99,6 +99,247 @@ Centralized docs (gateway):
 
 - `http://localhost:8080/swagger-ui/index.html`
 
+## Postman Tested Endpoints (Local)
+
+Base URL (via API Gateway): `http://localhost:8080`
+
+Postman Authorization setup for protected endpoints:
+
+- Type: `Bearer Token`
+- Value: JWT token received from `POST /auth/login`
+
+### Auth (`/auth`) - Public
+
+`POST /auth/register`
+
+Request:
+
+```json
+{
+  "name": "Jayanth",
+  "email": "jayanth@example.com",
+  "password": "password123"
+}
+```
+
+Response:
+
+```json
+"User registered successfully"
+```
+
+`POST /auth/login`
+
+Request:
+
+```json
+{
+  "email": "jayanth@example.com",
+  "password": "password123"
+}
+```
+
+Response:
+
+```json
+"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJqYXlhbnRoQGV4YW1wbGUuY29tIiwiaWF0IjoxNzEwMDAwMDAwLCJleHAiOjE3MTAwMDM2MDB9.signature"
+```
+
+`GET /auth/validate`
+
+Response:
+
+```json
+"JWT Token is valid"
+```
+
+### Election (`/elections`) - JWT Required
+
+`POST /elections`
+
+Request:
+
+```json
+{
+  "title": "General Election 2026",
+  "description": "City mayor election",
+  "startDate": "2026-03-10T09:00:00",
+  "endDate": "2026-03-10T18:00:00"
+}
+```
+
+Response:
+
+```json
+{
+  "id": 1,
+  "title": "General Election 2026",
+  "description": "City mayor election",
+  "startDate": "2026-03-10T09:00:00",
+  "endDate": "2026-03-10T18:00:00",
+  "status": "CREATED"
+}
+```
+
+`GET /elections`
+
+Response:
+
+```json
+[
+  {
+    "id": 1,
+    "title": "General Election 2026",
+    "description": "City mayor election",
+    "startDate": "2026-03-10T09:00:00",
+    "endDate": "2026-03-10T18:00:00",
+    "status": "ACTIVE"
+  }
+]
+```
+
+`GET /elections/{id}`
+
+Response:
+
+```json
+{
+  "id": 1,
+  "title": "General Election 2026",
+  "description": "City mayor election",
+  "startDate": "2026-03-10T09:00:00",
+  "endDate": "2026-03-10T18:00:00",
+  "status": "ACTIVE"
+}
+```
+
+`POST /elections/start/{id}`
+
+Response:
+
+```json
+{
+  "id": 1,
+  "status": "ACTIVE"
+}
+```
+
+`POST /elections/close/{id}`
+
+Response:
+
+```json
+{
+  "id": 1,
+  "status": "CLOSED"
+}
+```
+
+`GET /elections/{id}/tally`
+
+Response:
+
+```json
+[
+  {
+    "candidateId": 101,
+    "voteCount": 25
+  },
+  {
+    "candidateId": 102,
+    "voteCount": 12
+  }
+]
+```
+
+### Candidate (`/candidates`) - JWT Required
+
+`POST /candidates`
+
+Request:
+
+```json
+{
+  "name": "Candidate A",
+  "party": "Independent",
+  "electionId": 1
+}
+```
+
+Response:
+
+```json
+{
+  "id": 101,
+  "name": "Candidate A",
+  "party": "Independent",
+  "electionId": 1
+}
+```
+
+`GET /candidates/{electionId}`
+
+Response:
+
+```json
+[
+  {
+    "id": 101,
+    "name": "Candidate A",
+    "party": "Independent",
+    "electionId": 1
+  },
+  {
+    "id": 102,
+    "name": "Candidate B",
+    "party": "People's Party",
+    "electionId": 1
+  }
+]
+```
+
+### Vote (`/votes`) - JWT Required
+
+`POST /votes`
+
+Request:
+
+```json
+{
+  "userId": 10,
+  "electionId": 1,
+  "candidateId": 101
+}
+```
+
+Response:
+
+```json
+{
+  "id": 5001,
+  "userId": 10,
+  "electionId": 1,
+  "candidateId": 101
+}
+```
+
+`GET /votes/results/{electionId}`
+
+Response:
+
+```json
+[
+  {
+    "candidateId": 101,
+    "voteCount": 25
+  },
+  {
+    "candidateId": 102,
+    "voteCount": 12
+  }
+]
+```
+
 ## Sample Flow
 
 1. Register/Login via auth endpoints
@@ -129,4 +370,3 @@ This project showcases practical backend engineering skills:
 
 **Jayanth**  
 If you found this project useful, feel free to star the repository.
-
