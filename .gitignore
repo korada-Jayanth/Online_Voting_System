@@ -1,0 +1,13 @@
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Build output
+**/target/
+**/build/
+
+# IDE / OS files
+.idea/
+*.iml
+.DS_Store

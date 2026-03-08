@@ -1,0 +1,28 @@
+server:
+  port: 8083
+
+spring:
+  config:
+    import: optional:file:../.env[.properties],optional:file:.env[.properties]
+  application:
+    name: vote-service
+
+  datasource:
+    url: ${VOTE_DB_URL:jdbc:mysql://localhost:3306/vote_db}
+    username: ${VOTE_DB_USERNAME:root}
+    password: ${VOTE_DB_PASSWORD:}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_DEFAULT_ZONE:http://localhost:8761/eureka}

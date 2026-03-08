@@ -1,0 +1,13 @@
+spring:
+  config:
+    import: optional:file:../.env[.properties],optional:file:.env[.properties]
+  application:
+    name: service-reg
+
+eureka:
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+
+server:
+  port: 8761

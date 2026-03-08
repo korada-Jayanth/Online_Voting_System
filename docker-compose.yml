@@ -1,0 +1,153 @@
+services:
+  mysql-auth:
+    image: mysql:8.4
+    container_name: mysql-auth
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpass}
+      MYSQL_DATABASE: voting_auth_db
+    volumes:
+      - mysql_auth_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  mysql-election:
+    image: mysql:8.4
+    container_name: mysql-election
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpass}
+      MYSQL_DATABASE: election_db
+    volumes:
+      - mysql_election_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  mysql-vote:
+    image: mysql:8.4
+    container_name: mysql-vote
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpass}
+      MYSQL_DATABASE: vote_db
+    volumes:
+      - mysql_vote_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  service-reg:
+    build:
+      context: ./service-reg
+    container_name: service-reg
+    ports:
+      - "8761:8761"
+
+  auth-service:
+    build:
+      context: ./auth-service
+    container_name: auth-service
+    ports:
+      - "8081:8081"
+    environment:
+      AUTH_DB_URL: jdbc:mysql://mysql-auth:3306/voting_auth_db
+      AUTH_DB_USERNAME: root
+      AUTH_DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpass}
+      EUREKA_DEFAULT_ZONE: http://service-reg:8761/eureka
+      JWT_SECRET: ${JWT_SECRET:-mysecretkeymysecretkeymysecretkey}
+    depends_on:
+      mysql-auth:
+        condition: service_healthy
+      service-reg:
+        condition: service_started
+
+  election-service:
+    build:
+      context: ./election-service
+    container_name: election-service
+    ports:
+      - "8082:8082"
+    environment:
+      ELECTION_DB_URL: jdbc:mysql://mysql-election:3306/election_db
+      ELECTION_DB_USERNAME: root
+      ELECTION_DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpass}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+      EUREKA_DEFAULT_ZONE: http://service-reg:8761/eureka
+    depends_on:
+      mysql-election:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      service-reg:
+        condition: service_started
+
+  vote-service:
+    build:
+      context: ./vote-service
+    container_name: vote-service
+    ports:
+      - "8083:8083"
+    environment:
+      VOTE_DB_URL: jdbc:mysql://mysql-vote:3306/vote_db
+      VOTE_DB_USERNAME: root
+      VOTE_DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpass}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+      EUREKA_DEFAULT_ZONE: http://service-reg:8761/eureka
+    depends_on:
+      mysql-vote:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      service-reg:
+        condition: service_started
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      AUTH_SERVICE_URI: http://auth-service:8081
+      ELECTION_SERVICE_URI: http://election-service:8082
+      VOTE_SERVICE_URI: http://vote-service:8083
+      EUREKA_DEFAULT_ZONE: http://service-reg:8761/eureka
+      JWT_SECRET: ${JWT_SECRET:-mysecretkeymysecretkeymysecretkey}
+    depends_on:
+      auth-service:
+        condition: service_started
+      election-service:
+        condition: service_started
+      vote-service:
+        condition: service_started
+
+volumes:
+  mysql_auth_data:
+  mysql_election_data:
+  mysql_vote_data:

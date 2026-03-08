@@ -1,0 +1,67 @@
+server:
+  port: 8080
+
+spring:
+  config:
+    import: optional:file:../.env[.properties],optional:file:.env[.properties]
+  application:
+    name: api-gateway
+
+  cloud:
+    gateway:
+      routes:
+        - id: auth-docs
+          uri: ${AUTH_SERVICE_URI:http://localhost:8081}
+          predicates:
+            - Path=/auth/v3/api-docs
+          filters:
+            - RewritePath=/auth/v3/api-docs,/v3/api-docs
+        - id: election-docs
+          uri: ${ELECTION_SERVICE_URI:http://localhost:8082}
+          predicates:
+            - Path=/election/v3/api-docs
+          filters:
+            - RewritePath=/election/v3/api-docs,/v3/api-docs
+        - id: vote-docs
+          uri: ${VOTE_SERVICE_URI:http://localhost:8083}
+          predicates:
+            - Path=/vote/v3/api-docs
+          filters:
+            - RewritePath=/vote/v3/api-docs,/v3/api-docs
+        - id: auth-service
+          uri: ${AUTH_SERVICE_URI:http://localhost:8081}
+          predicates:
+            - Path=/auth/**
+        - id: election-service
+          uri: ${ELECTION_SERVICE_URI:http://localhost:8082}
+          predicates:
+            - Path=/elections/**
+          filters:
+            - JwtAuthFilter
+        - id: candidate-service
+          uri: ${ELECTION_SERVICE_URI:http://localhost:8082}
+          predicates:
+            - Path=/candidates/**
+          filters:
+            - JwtAuthFilter
+        - id: vote-service
+          uri: ${VOTE_SERVICE_URI:http://localhost:8083}
+          predicates:
+            - Path=/votes/**
+          filters:
+            - JwtAuthFilter
+
+springdoc:
+  swagger-ui:
+    urls:
+      - name: Auth Service
+        url: /auth/v3/api-docs
+      - name: Election Service
+        url: /election/v3/api-docs
+      - name: Vote Service
+        url: /vote/v3/api-docs
+    urls-primary-name: Auth Service
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:mysecretkeymysecretkeymysecretkey}
